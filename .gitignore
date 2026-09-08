@@ -1,0 +1,11 @@
+# Rahasia — jangan pernah di-commit
+.env
+
+# Cache & log
+*.log
+*.bak
+*.old
+
+# OS
+.DS_Store
+Thumbs.db

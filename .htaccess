@@ -1,0 +1,91 @@
+# ============================================================
+#  Apotek Sehat — Keamanan Apache (.htaccess)
+# ============================================================
+
+# --- Matikan directory listing (tidak bisa lihat isi folder) ---
+Options -Indexes
+
+# --- Sembunyikan signature server ---
+ServerSignature Off
+
+# --- Clean URL: sembunyikan ekstensi .php & jadikan index.php = root ---
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
+
+    # index.php (di root ATAU di subfolder manapun) -> redirect ke "/" folder-nya
+    RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ (.*)index\.php[\ ?] [NC]
+    RewriteRule ^ %1 [R=301,L]
+
+    # Permintaan eksplisit "sesuatu.php" yang DIKETIK/DIKLIK langsung (hanya file di root)
+    # -> redirect 301 ke versi tanpa .php (supaya address bar selalu bersih)
+    RewriteCond %{THE_REQUEST} ^[A-Z]{3,9}\ /([^./]+)\.php[\ ?] [NC]
+    RewriteRule ^ /%1 [R=301,L]
+
+    # Internal: kalau yang diminta "penjualan" (tanpa ekstensi) dan file fisiknya
+    # tidak ada, tapi "penjualan.php" ada -> proses file .php itu (tanpa ubah URL)
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME}\.php -f
+    RewriteRule ^(.*)$ $1.php [L]
+</IfModule>
+
+# --- Cegah akses ke file sensitif (.env, .sql, .md, dotfiles, dll) ---
+<IfModule mod_authz_core.c>
+    # Apache 2.4+
+    <FilesMatch "(^\.|\.(env|ini|log|sql|md|sh|bak|old|example|json|lock|yml|yaml|dist)$)">
+        Require all denied
+    </FilesMatch>
+    <Files ".htaccess">
+        Require all denied
+    </Files>
+</IfModule>
+<IfModule !mod_authz_core.c>
+    # Apache 2.2
+    <FilesMatch "(^\.|\.(env|ini|log|sql|md|sh|bak|old|example|json|lock|yml|yaml|dist)$)">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+    <Files ".htaccess">
+        Order allow,deny
+        Deny from all
+    </Files>
+</IfModule>
+
+# --- Larang akses langsung ke endpoint partial (hanya untuk fetch internal) ---
+<Files "transaksi_detail.php">
+    <IfModule mod_authz_core.c>
+        # tetap diizinkan via aplikasi; proteksi login sudah di level PHP
+        Require all granted
+    </IfModule>
+</Files>
+
+# --- Header keamanan HTTP ---
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    # Aktifkan baris berikut HANYA jika situs sudah pakai HTTPS penuh:
+    # Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    # Sembunyikan versi PHP
+    Header unset X-Powered-By
+    Header always unset X-Powered-By
+</IfModule>
+
+# --- Sembunyikan versi PHP (php.ini level) ---
+<IfModule mod_php.c>
+    php_flag expose_php Off
+</IfModule>
+
+# --- Paksa HTTPS (aktifkan setelah domain punya SSL) ---
+# <IfModule mod_rewrite.c>
+#     RewriteEngine On
+#     RewriteCond %{HTTPS} off
+#     RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+# </IfModule>
+
+# --- Halaman error custom (opsional) ---
+ErrorDocument 403 "Akses ditolak."
+ErrorDocument 404 "Halaman tidak ditemukan."
