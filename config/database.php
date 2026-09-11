@@ -16,9 +16,9 @@ require_once __DIR__ . '/env.php';
 load_env(__DIR__ . '/../.env');
 
 define('DB_HOST', env('DB_HOST', 'localhost'));
-define('DB_USER', env('DB_USER', 'u297738695_apotek_pos'));
-define('DB_PASS', env('DB_PASS', 'RSUDk4r4w4ng'));
-define('DB_NAME', env('DB_NAME', 'u297738695_apotek_pos'));
+define('DB_USER', env('DB_USER', 'root'));
+define('DB_PASS', env('DB_PASS', ''));
+define('DB_NAME', env('DB_NAME', 'klinik'));
 
 $APP_DEBUG = (bool) env('APP_DEBUG', false);
 
